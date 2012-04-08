@@ -1,0 +1,7 @@
+*.idea
+*.goide
+*.6
+*_obj
+*.iml
+*.ipr
+*.iws
