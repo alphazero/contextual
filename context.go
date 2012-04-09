@@ -2,6 +2,7 @@ package contextual
 
 import (
 	"errors"
+	"log" // TEMP
 )
 
 type context struct {
@@ -38,12 +39,12 @@ func (c *context) IsRoot() bool {
 // context may get distinct results.)
 func (c *context) IsEmpty() bool {
 	if len(c.bindings) > 0 {
-		return true
+		return false
 	}
 	if c.parent != nil {
 		return c.parent.IsEmpty()
 	}
-	return false
+	return true
 }
 
 func (c *context) Size() int {
@@ -63,11 +64,16 @@ func (c *context) Size() int {
 //
 //  NilNameError <= nil names are not allowed
 func (c *context) Lookup(name string) (value interface{}, e error) {
+	log.Printf("Lookup(%s)\n", name)
 	if name == "" {
 		return nil, Error{NilNameError}
 	}
 
 	if value = c.bindings[name]; value == nil {
+		log.Printf("Lookup(%s) = %v\n", name, value)
+		for n, v := range c.bindings {
+			log.Printf("\tdebug [%s] => %v\n", n, v)
+		}
 		if c.parent != nil {
 			return c.parent.Lookup(name)
 		}
@@ -118,8 +124,8 @@ func (c *context) Bind(name string, value interface{}) error {
 		return Error{NilNameError}
 	}
 
-	if value = c.bindings[name]; value != nil {
-		return newBindingError(AlreadyBoundError, name, value)
+	if v := c.bindings[name]; v != nil {
+		return newBindingError(AlreadyBoundError, name, v)
 	}
 
 	c.bindings[name] = value
@@ -142,8 +148,7 @@ func (c *context) Unbind(name string) (value interface{}, e error) {
 		return nil, newBindingError(NoSuchBindingError, name, value)
 	}
 
-	c.bindings[name] = nil
-
+	delete(c.bindings, name)
 	return
 }
 

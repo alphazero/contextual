@@ -20,11 +20,49 @@ func TestContextStructStart_NOP(t *testing.T) {
 	fmt.Println("contextual.context")
 }
 
+// helper
+type emptyStruct struct{}
+
+// helper
+func mixedTypeValueSet() []interface{} {
+	num := 10
+	str := emptyStruct{}
+	ptr := &emptyStruct{}
+	ch := make(chan emptyStruct)
+	fn := func() {} // func() is "uncomparable type" oh, well.
+	pfn := &fn
+	txt := "hello there"
+
+	return []interface{}{
+		num, str, ptr, ch /*fn,*/, pfn, txt,
+	}
+
+}
+
+// helper
+func genericUniqueIndexNames(n int) []string {
+	var names []string = make([]string, n)
+	var sanitycheck = make(map[string]int)
+
+	for i := 0; i < n; i++ {
+		names[i] = fmt.Sprintf("value[%d]", i)
+		sanitycheck[names[i]] = i
+	}
+	// make sure names are indeed unique
+	if len(sanitycheck) != len(names) {
+		panic("genericUniqueIndexNames")
+	}
+
+	return names
+}
+
 /* --- CHECK a1 ---------------------------------------------------------------
  *  a1: correct construction and intial state
  *
  * tests for correct construction and initialization of contexts, and asserts
- * on input params of the associated functions, including IsEmpty(), and Size()
+ * on input params of the associated functions.
+ * - Context#Size()    // on init
+ * - Context#IsEmpty() // on init
  *
  * assumptions:
  * - none
@@ -59,8 +97,8 @@ func TestNewContextChild(t *testing.T) {
 
 func TestNewContextInit(t *testing.T) {
 	ctx := NewContext()
-	if ctx.IsEmpty() == true {
-		t.Fatalf("New Context#IsEmpty returned true")
+	if ctx.IsEmpty() != true {
+		t.Fatalf("New Context#IsEmpty returned false")
 	}
 	if ctx.Size() != 0 {
 		t.Fatalf("New Context#Size returned non-zero")
@@ -73,8 +111,8 @@ func TestNewContextChildInit(t *testing.T) {
 	rootCtx := NewContext()
 
 	ctx, _ := ChildContext(rootCtx)
-	if ctx.IsEmpty() == true {
-		t.Fatalf("New child Context#IsEmpty returned true")
+	if ctx.IsEmpty() != true {
+		t.Fatalf("New child Context#IsEmpty returned false")
 	}
 	if ctx.Size() != 0 {
 		t.Fatalf("New child Context#Size returned non-zero")
@@ -117,47 +155,13 @@ func TestIsRoot(t *testing.T) {
  * tests for correct behavior of the following Context methods:
  * - Context#Bind()
  * - Context#Lookup()
- *
+ * - Context#Size()    // post init
+ * - Context#IsEmpty() // post init
+ * - Context#Unbind()  // post init
  * assumptions:
  * - a1
  * - a2
  */
-
-// helper
-type emptyStruct struct{}
-
-// helper
-func mixedTypeValueSet() []interface{} {
-	num := 10
-	str := emptyStruct{}
-	ptr := &emptyStruct{}
-	ch := make(chan emptyStruct)
-	fn := func() {}
-	pfn := &fn
-	txt := "hello there"
-
-	return []interface{}{
-		num, str, ptr, ch, fn, pfn, txt,
-	}
-
-}
-
-// helper
-func genericUniqueIndexNames(n int) []string {
-	var names []string = make([]string, n)
-	var sanitycheck = make(map[string]int)
-
-	for i := 0; i < n; i++ {
-		names[i] = fmt.Sprint("value[%d]", i)
-		sanitycheck[names[i]] = i
-	}
-	// make sure names are indeed unique
-	if len(sanitycheck) != len(names) {
-		panic("genericUniqueIndexNames")
-	}
-
-	return names
-}
 
 // Fully test Context.Bind() for a single root context
 // including spec'd errors.
@@ -167,7 +171,37 @@ func TestBindSingleContext(t *testing.T) {
 	values := mixedTypeValueSet()
 	names := genericUniqueIndexNames(len(values))
 
-	// context should be empty.
+	// Lookup()
+
+	// test specified errors for Lookup
+	//  NilNameError <= zero-value names are not allowed
+	if _, e := ctx.Lookup(""); e == nil {
+		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
+	}
+
+	// test nil result
+	v, e := ctx.Lookup("no-such-binding")
+	if e != nil {
+		t.Fatalf("Unexpected error: %s", e)
+	}
+	if v != nil {
+		t.Fatalf("Lookup(\"\") - expected:%v got:%v", nil, v)
+	}
+
+	// Bind()
+
+	// test specified errors for Bind
+	//  NilNameError <= zero-value names are not allowed
+	//  NilValueError <= nil values are not allowed
+	//  AlreadyBoundError <= a value is already bound to the name
+	if e := ctx.Bind("", "some value"); e == nil {
+		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
+	}
+	if e := ctx.Bind("some key", nil); e == nil {
+		t.Fatalf("Lookup(nil) expected error: %s", NilValueError)
+	}
+
+	// create bindings
 	for i, name := range names {
 		value := values[i]
 		if e := ctx.Bind(name, value); e != nil {
@@ -175,7 +209,58 @@ func TestBindSingleContext(t *testing.T) {
 		}
 	}
 
-	fmt.Println("\tContext#Bind() - single context")
+	// look'em up
+	for i, name := range names {
+		expv := values[i]
+		v, e := ctx.Lookup(name)
+		if e != nil {
+			t.Fatalf("Unexpected error: %s", e)
+		}
+		if v != expv {
+			t.Fatalf("Lookup(%s) - expected:%s got:%s", name, expv, v)
+		}
+	}
+
+	// IsEmpty
+	if b := ctx.IsEmpty(); b {
+		t.Fatalf("IsEmpty() - expected:%s got:%s", false, b)
+	}
+	// Size
+	if n := ctx.Size(); n != len(names) {
+		t.Fatalf("Size() - expected:%s got:%s", len(names), n)
+	}
+
+	// Unbind()
+
+	// test specified errors for Unbind
+	//  NilNameError <= zero-value names are not allowed
+	//  NoSuchBindingError <= no values are bound to the name
+	wat, e := ctx.Unbind("")
+	if e == nil {
+		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
+	}
+	if wat != nil {
+		t.Fatalf("Unexpected value on faulted return: %s", wat)
+	}
+	wat, e = ctx.Unbind("some key")
+	if e == nil {
+		t.Fatalf("Lookup(nil) expected error: %s", NoSuchBindingError)
+	}
+	if wat != nil {
+		t.Fatalf("Unexpected value on faulted return: %s", wat)
+	}
+	// Remove them
+	for i, name := range names {
+		expv := values[i]
+		v, e := ctx.Unbind(name)
+		if e != nil {
+			t.Fatalf("Unexpected error: %s", e)
+		}
+		if v != expv {
+			t.Fatalf("Lookup(%s) - expected:%s got:%s", name, expv, v)
+		}
+	}
+
 }
 
 /* --- CONFIRMED a3 ----------------------------------------------------------*/
