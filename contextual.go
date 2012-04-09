@@ -25,7 +25,7 @@ type Error struct {
 	msg string
 }
 
-func (e Error) Error() string {
+func (e *Error) Error() string {
 	return e.msg
 }
 
@@ -36,7 +36,7 @@ type BindingError struct {
 	msg   string
 }
 
-func (e BindingError) Error() string {
+func (e *BindingError) Error() string {
 	return fmt.Sprintf("%s - (name:%s - value:%v)", e.msg, e.name, e.value)
 }
 
@@ -54,7 +54,7 @@ type Context interface {
 	// Errors:
 	//
 	//  NilNameError <= nil names are not allowed
-	Lookup(name string) (value interface{}, e Error)
+	Lookup(name string) (value interface{}, e *Error)
 
 	// LookupN is a constrained variant of Lookup.  (See Lookup() for general details)
 	//
@@ -65,7 +65,7 @@ type Context interface {
 	//
 	//  NilNameError <= nil names are not allowed
 	//  IllegalArgument <= n is negative
-	LookupN(name string, n int) (interface{}, Error)
+	LookupN(name string, n int) (interface{}, *Error)
 
 	// Bind will bind the given value to the name in the receiver.
 	//
@@ -74,7 +74,7 @@ type Context interface {
 	//  NilNameError <= nil names are not allowed
 	//  NilValueError <= nil values are not allowed
 	//  AlreadyBoundError <= a value is already bound to the name
-	Bind(name string, value interface{}) error
+	Bind(name string, value interface{}) *Error
 
 	// Unbind will delete an value binding to the provided name.
 	//
@@ -82,7 +82,7 @@ type Context interface {
 	//
 	//  NilNameError <= nil names are not allowed
 	//  NoSuchBinding <= no values are bound to the name
-	Unbind(name string) error
+	Unbind(name string) *Error
 
 	// Rebind's semantics are precisely identical to an Unbind followed
 	// by a Bound.
@@ -92,5 +92,5 @@ type Context interface {
 	//  NoSuchBinding <= no values were bound to the name
 	//  NilNameError <= nil names are not allowed
 	//  NilValueError <= nil values are not allowed
-	Rebind(name string, value interface{}) error
+	Rebind(name string, value interface{}) *Error
 }
