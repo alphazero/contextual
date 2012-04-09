@@ -21,21 +21,17 @@ func ChildContext(p *context) (c *context, e error) {
 	if p == nil {
 		return nil, errors.New("p is nil")
 	}
+
 	c = newContext()
 	c.parent = p
 	return
 }
 
-func assert(c *context) {
-	if c == nil {
-		panic("c is receiver")
-	}
-}
 func (c *context) IsRoot() bool {
-	assert(c) // REVU: not necessary as long as context remains package private. (ALL)
 	return c.parent == nil
 }
 
+// Per spec:
 // Lookup will return a non-nil interface{} reference if a non-nil value binding
 // is present in the context or its parental hierarchical path.  The receiver is
 // first checked, and if not root, successive parents (including root) will be searched.
@@ -47,6 +43,7 @@ func (c *context) Lookup(name string) (value interface{}, e error) {
 	if name == "" {
 		return nil, Error{NilNameError}
 	}
+
 	if value = c.bindings[name]; value == nil {
 		if c.parent != nil {
 			return c.parent.Lookup(name)
@@ -55,6 +52,7 @@ func (c *context) Lookup(name string) (value interface{}, e error) {
 	return
 }
 
+// Per spec:
 // LookupN is a constrained variant of Lookup.  (See Lookup() for general details)
 //
 // This method will limit its walk up the hierarchy (if possible) to number of
@@ -71,6 +69,7 @@ func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 	if n < 0 {
 		return nil, Error{IllegalArgumentError}
 	}
+
 	if value = c.bindings[name]; value == nil {
 		n--
 		if c.parent != nil && n >= 0 {
@@ -80,6 +79,7 @@ func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 	return
 }
 
+// Per spec:
 // Bind will bind the given value to the name in the receiver.
 //
 // Errors:
@@ -88,27 +88,59 @@ func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 //  NilValueError <= nil values are not allowed
 //  AlreadyBoundError <= a value is already bound to the name
 func (c *context) Bind(name string, value interface{}) error {
+	if name == "" {
+		return Error{NilValueError}
+	}
+	if value == nil {
+		return Error{NilNameError}
+	}
+
+	if value = c.bindings[name]; value != nil {
+		return Error{AlreadyBoundError}
+	}
+
+	c.bindings[name] = value
 	return nil
 }
 
-// Unbind will delete an value binding to the provided name.
+// Per spec:
+// Unbind will delete a value binding to the provided name.
+// The unbound value is returned.
 //
 // Errors:
 //
-//  NilNameError <= nil names are not allowed
+//  NilNameError <= zero-value names are not allowed
 //  NoSuchBinding <= no values are bound to the name
-func (c *context) Unbind(name string) error {
-	return nil
+func (c *context) Unbind(name string) (value interface{}, e error) {
+	if name == "" {
+		return nil, Error{NilValueError}
+	}
+	value = c.bindings[name]
+	if value != nil {
+		return nil, Error{AlreadyBoundError}
+	}
+
+	c.bindings[name] = nil
+
+	return
 }
 
+// Per spec:
 // Rebind's semantics are precisely identical to an Unbind followed
 // by a Bound.
+// The unbound value is returned.
 //
 // Errors:
 //
 //  NoSuchBinding <= no values were bound to the name
-//  NilNameError <= nil names are not allowed
+//  NilNameError <= zero-value names are not allowed
 //  NilValueError <= nil values are not allowed
-func (c *context) Rebind(name string, value interface{}) error {
-	return nil
+func (c *context) Rebind(name string, value interface{}) (unboundValue interface{}, e error) {
+
+	if unboundValue, e = c.Unbind(name); e != nil {
+		return
+	}
+	e = c.Bind(name, value)
+
+	return
 }

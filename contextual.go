@@ -77,21 +77,23 @@ type Context interface {
 	//  AlreadyBoundError <= a value is already bound to the name
 	Bind(name string, value interface{}) error
 
-	// Unbind will delete an value binding to the provided name.
+	// Unbind will delete a value binding to the provided name.
+	// The unbound value is returned.
 	//
 	// Errors:
 	//
 	//  NilNameError <= zero-value names are not allowed
 	//  NoSuchBinding <= no values are bound to the name
-	Unbind(name string) error
+	Unbind(name string) (unboundValue interface{}, e error)
 
 	// Rebind's semantics are precisely identical to an Unbind followed
 	// by a Bound.
+	// The unbound value is returned.
 	//
 	// Errors:
 	//
 	//  NoSuchBinding <= no values were bound to the name
 	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
-	Rebind(name string, value interface{}) error
+	Rebind(name string, value interface{}) (unboundValue interface{}, e error)
 }
