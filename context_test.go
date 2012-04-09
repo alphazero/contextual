@@ -157,19 +157,18 @@ func TestIsRoot(t *testing.T) {
  * - Context#Lookup()
  * - Context#Size()    // post init
  * - Context#IsEmpty() // post init
- * - Context#Unbind()  // post init
+ * - Context#Unbind()
+ * - Context#Rebind()
  * assumptions:
  * - a1
  * - a2
  */
 
-// Fully test Context.Bind() for a single root context
-// including spec'd errors.
-func TestBindSingleContext(t *testing.T) {
+// Confirm spec compliance for faults
+// {Lookup, LookupN, Bind, Unbind}
+func TestContextSpecdError(t *testing.T) {
 	// setup
 	ctx := NewContext()
-	values := mixedTypeValueSet()
-	names := genericUniqueIndexNames(len(values))
 
 	// Lookup()
 
@@ -178,9 +177,22 @@ func TestBindSingleContext(t *testing.T) {
 	if _, e := ctx.Lookup(""); e == nil {
 		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
 	}
-
-	// test nil result
 	v, e := ctx.Lookup("no-such-binding")
+	if e != nil {
+		t.Fatalf("Unexpected error: %s", e)
+	}
+	if v != nil {
+		t.Fatalf("Lookup(\"\") - expected:%v got:%v", nil, v)
+	}
+
+	// LookupN()
+
+	//  NilNameError <= nil names are not allowed
+	//  NegativeNArgError <= n is negative
+	if _, e := ctx.LookupN("", 0); e == nil {
+		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
+	}
+	v, e = ctx.LookupN("no-such-binding", 0)
 	if e != nil {
 		t.Fatalf("Unexpected error: %s", e)
 	}
@@ -195,13 +207,65 @@ func TestBindSingleContext(t *testing.T) {
 	//  NilValueError <= nil values are not allowed
 	//  AlreadyBoundError <= a value is already bound to the name
 	if e := ctx.Bind("", "some value"); e == nil {
-		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
+		t.Fatalf("Bind(\"\") expected error: %s", NilNameError)
 	}
 	if e := ctx.Bind("some key", nil); e == nil {
-		t.Fatalf("Lookup(nil) expected error: %s", NilValueError)
+		t.Fatalf("Bind(\"\") expected error: %s", NilValueError)
 	}
 
-	// create bindings
+	// Unbind()
+
+	// test specified errors for Unbind
+	//  NilNameError <= zero-value names are not allowed
+	//  NoSuchBindingError <= no values are bound to the name
+	wat, e := ctx.Unbind("")
+	if e == nil {
+		t.Fatalf("Unbind(\"\") expected error: %s", NilNameError)
+	}
+	if wat != nil {
+		t.Fatalf("Unexpected value on faulted return: %s", wat)
+	}
+	wat, e = ctx.Unbind("some key")
+	if e == nil {
+		t.Fatalf("Unbind(\"\") expected error: %s", NoSuchBindingError)
+	}
+	if wat != nil {
+		t.Fatalf("Unexpected value on faulted return: %s", wat)
+	}
+
+	// Rebind()
+
+	// test specified errors for Rebind
+	//  NoSuchBinding <= no values were bound to the name
+	//  NilNameError <= zero-value names are not allowed
+	//  NilValueError <= nil values are not allowed
+	wat, e = ctx.Rebind("", "some value")
+	if e == nil {
+		t.Fatalf("Rebind(\"\", v) expected error: %s", NilNameError)
+	}
+	if wat != nil {
+		t.Fatalf("Unexpected value on faulted return: %s", wat)
+	}
+	wat, e = ctx.Rebind("some key", "some value")
+	if e == nil {
+		t.Fatalf("Rebind(\"\", v) expected error: %s", NoSuchBindingError)
+	}
+	if wat != nil {
+		t.Fatalf("Unexpected value on faulted return: %s", wat)
+	}
+	if wat, e = ctx.Rebind("doesn't matter", nil); e == nil {
+		t.Fatalf("Rebind (nil) expected error: %s", NilValueError)
+	}
+}
+
+func TestSingleContext(t *testing.T) {
+	// setup
+	ctx := NewContext()
+	values := mixedTypeValueSet()
+	names := genericUniqueIndexNames(len(values))
+
+	// Bind()
+
 	for i, name := range names {
 		value := values[i]
 		if e := ctx.Bind(name, value); e != nil {
@@ -209,7 +273,8 @@ func TestBindSingleContext(t *testing.T) {
 		}
 	}
 
-	// look'em up
+	// Lookup()
+
 	for i, name := range names {
 		expv := values[i]
 		v, e := ctx.Lookup(name)
@@ -221,35 +286,20 @@ func TestBindSingleContext(t *testing.T) {
 		}
 	}
 
-	// IsEmpty
+	// IsEmpty()
+
 	if b := ctx.IsEmpty(); b {
 		t.Fatalf("IsEmpty() - expected:%s got:%s", false, b)
 	}
-	// Size
+
+	// Size()
+
 	if n := ctx.Size(); n != len(names) {
 		t.Fatalf("Size() - expected:%s got:%s", len(names), n)
 	}
 
 	// Unbind()
 
-	// test specified errors for Unbind
-	//  NilNameError <= zero-value names are not allowed
-	//  NoSuchBindingError <= no values are bound to the name
-	wat, e := ctx.Unbind("")
-	if e == nil {
-		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
-	}
-	if wat != nil {
-		t.Fatalf("Unexpected value on faulted return: %s", wat)
-	}
-	wat, e = ctx.Unbind("some key")
-	if e == nil {
-		t.Fatalf("Lookup(nil) expected error: %s", NoSuchBindingError)
-	}
-	if wat != nil {
-		t.Fatalf("Unexpected value on faulted return: %s", wat)
-	}
-	// Remove them
 	for i, name := range names {
 		expv := values[i]
 		v, e := ctx.Unbind(name)
@@ -257,10 +307,57 @@ func TestBindSingleContext(t *testing.T) {
 			t.Fatalf("Unexpected error: %s", e)
 		}
 		if v != expv {
-			t.Fatalf("Lookup(%s) - expected:%s got:%s", name, expv, v)
+			t.Fatalf("Unbind(%s) - expected:%s got:%s", name, expv, v)
 		}
 	}
+	// confirm Size and IsEmpty
+	if !ctx.IsEmpty() {
+		t.Fatalf("IsEmpty() returned true")
+	}
+	if ctx.Size() != 0 {
+		t.Fatalf("Size() returned non-zero")
+	}
 
+	// Rebind()
+	ctx.Bind(names[0], values[0]) // setup
+	oldv, e := ctx.Rebind(names[0], "on the rebound")
+	if e != nil {
+		t.Fatalf("unexpected error: %s", e)
+	}
+	if oldv != values[0] {
+		t.Fatalf("Rebind() old value - expected:%v got:%v", values[0], oldv)
+	}
+
+	fmt.Println("\tContext compliance - root")
 }
 
 /* --- CONFIRMED a3 ----------------------------------------------------------*/
+
+/* --- CHECK a4 ---------------------------------------------------------------
+ * - a4: correct basic ops for context hierarchy
+ *
+ * tests for correct behavior of the following Context methods:
+ * - Context#Bind()
+ * - Context#Lookup()
+ * - Context#Size()    // post init
+ * - Context#IsEmpty() // post init
+ * - Context#Unbind()
+ * - Context#Rebind()
+ * assumptions:
+ * - a1
+ * - a2
+ * - a3
+ */
+
+func TestContextHierarchy(t *testing.T) {
+	// setup
+	//	ctx := NewContext()
+	//	child1, _ := ChildContext(ctx)
+	//	child1_1, _ := ChildContext(child1)
+	//	child2, _ := ChildContext(ctx)
+	//
+	//	values := mixedTypeValueSet()
+	//	names := genericUniqueIndexNames(len(values))
+}
+
+/* --- CONFIRMED a4 ----------------------------------------------------------*/
