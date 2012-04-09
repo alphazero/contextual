@@ -6,7 +6,7 @@ import (
 
 type context struct {
 	parent  *context
-	objects map[string]interface{}
+	bindings map[string]interface{}
 }
 
 func newContext() *context {
@@ -26,7 +26,7 @@ func ChildContext(p *context) (c *context, e error) {
 	return
 }
 
-func test (c *context) Context {
+func ___TEMP___ (c *context) Context {
 	assert(c)
 	return c
 }
@@ -46,8 +46,16 @@ func (c *context) IsRoot() bool {
 // Errors:
 //
 //  NilNameError <= nil names are not allowed
-func (c *context) Lookup(name string) (value interface{}, e *Error) {
+func (c *context) Lookup(name string) (value interface{}, e error) {
 	assert(c)
+    if name == "" {
+        return nil, Error{NilNameError}
+    }
+	if value = c.bindings[name]; value == nil  {
+		if c.parent != nil {
+			return c.parent.Lookup(name)
+		}
+	}
 	return
 }
 
@@ -60,7 +68,7 @@ func (c *context) Lookup(name string) (value interface{}, e *Error) {
 //
 //  NilNameError <= nil names are not allowed
 //  IllegalArgument <= n is negative
-func (c *context) LookupN(name string, n int) (interface{}, *Error){
+func (c *context) LookupN(name string, n int) (interface{}, error){
 	assert(c)
 	return nil, nil
 }
@@ -72,7 +80,7 @@ func (c *context) LookupN(name string, n int) (interface{}, *Error){
 //  NilNameError <= nil names are not allowed
 //  NilValueError <= nil values are not allowed
 //  AlreadyBoundError <= a value is already bound to the name
-func (c *context) Bind(name string, value interface{}) *Error {
+func (c *context) Bind(name string, value interface{}) error {
 	assert(c)
 	return nil
 }
@@ -83,7 +91,7 @@ func (c *context) Bind(name string, value interface{}) *Error {
 //
 //  NilNameError <= nil names are not allowed
 //  NoSuchBinding <= no values are bound to the name
-func (c *context) Unbind(name string) *Error {
+func (c *context) Unbind(name string) error {
 	assert(c)
 	return nil
 }
@@ -96,7 +104,7 @@ func (c *context) Unbind(name string) *Error {
 //  NoSuchBinding <= no values were bound to the name
 //  NilNameError <= nil names are not allowed
 //  NilValueError <= nil values are not allowed
-func (c *context) Rebind(name string, value interface{}) *Error {
+func (c *context) Rebind(name string, value interface{}) error {
 	assert(c)
 	return nil
 }

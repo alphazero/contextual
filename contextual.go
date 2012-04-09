@@ -12,7 +12,7 @@ const (
 	/* - general errors - */
 	IllegalArgumentError = "ERR - illegal argument"
 	NilParentError       = "ERR - parent is nil"
-	NilNameError         = "ERR - name is nil"
+	NilNameError         = "ERR - name is nil/zero-value"
 	NoSuchBindingError   = "ERR - no such binding"
 
 	/* - binding op errors - */
@@ -25,7 +25,7 @@ type Error struct {
 	msg string
 }
 
-func (e *Error) Error() string {
+func (e Error) Error() string {
 	return e.msg
 }
 
@@ -53,8 +53,8 @@ type Context interface {
 	//
 	// Errors:
 	//
-	//  NilNameError <= nil names are not allowed
-	Lookup(name string) (value interface{}, e *Error)
+	//  NilNameError <= zero-value names are not allowed
+	Lookup(name string) (value interface{}, e error)
 
 	// LookupN is a constrained variant of Lookup.  (See Lookup() for general details)
 	//
@@ -63,26 +63,26 @@ type Context interface {
 	//
 	// Errors:
 	//
-	//  NilNameError <= nil names are not allowed
+	//  NilNameError <= zero-value names are not allowed
 	//  IllegalArgument <= n is negative
-	LookupN(name string, n int) (interface{}, *Error)
+	LookupN(name string, n int) (interface{}, error)
 
 	// Bind will bind the given value to the name in the receiver.
 	//
 	// Errors:
 	//
-	//  NilNameError <= nil names are not allowed
+	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
 	//  AlreadyBoundError <= a value is already bound to the name
-	Bind(name string, value interface{}) *Error
+	Bind(name string, value interface{}) error
 
 	// Unbind will delete an value binding to the provided name.
 	//
 	// Errors:
 	//
-	//  NilNameError <= nil names are not allowed
+	//  NilNameError <= zero-value names are not allowed
 	//  NoSuchBinding <= no values are bound to the name
-	Unbind(name string) *Error
+	Unbind(name string) error
 
 	// Rebind's semantics are precisely identical to an Unbind followed
 	// by a Bound.
@@ -90,7 +90,7 @@ type Context interface {
 	// Errors:
 	//
 	//  NoSuchBinding <= no values were bound to the name
-	//  NilNameError <= nil names are not allowed
+	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
-	Rebind(name string, value interface{}) *Error
+	Rebind(name string, value interface{}) error
 }
