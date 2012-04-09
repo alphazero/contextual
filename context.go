@@ -36,7 +36,7 @@ func assert(c *context) {
 	}
 }
 func (c *context) IsRoot() bool {
-	assert(c)
+	assert(c) // REVU: not necessary as long as context remains package private. (ALL)
 	return c.parent == nil
 }
 
@@ -69,9 +69,19 @@ func (c *context) Lookup(name string) (value interface{}, e error) {
 //
 //  NilNameError <= nil names are not allowed
 //  IllegalArgument <= n is negative
-func (c *context) LookupN(name string, n int) (interface{}, error) {
-	assert(c)
-	return nil, nil
+func (c *context) LookupN(name string, n int) (value interface{}, e error) {
+	if name == "" {
+		return nil, Error{NilNameError}
+	}
+	if n < 0 {
+		return nil, Error{IllegalArgumentError}
+	}
+	if value = c.bindings[name]; value == nil {
+		if c.parent != nil {
+			return c.parent.Lookup(name)
+		}
+	}
+	return
 }
 
 // Bind will bind the given value to the name in the receiver.

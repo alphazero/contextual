@@ -13,6 +13,7 @@ const (
 	IllegalArgumentError = "ERR - illegal argument"
 	NilParentError       = "ERR - parent is nil"
 	NilNameError         = "ERR - name is nil/zero-value"
+	NegativeNArrError    = "ERR - hierchy walk steps 'n' is negative"
 	NoSuchBindingError   = "ERR - no such binding"
 
 	/* - binding op errors - */
@@ -64,7 +65,7 @@ type Context interface {
 	// Errors:
 	//
 	//  NilNameError <= zero-value names are not allowed
-	//  IllegalArgument <= n is negative
+	//  NegativeNArgError <= n is negative
 	LookupN(name string, n int) (interface{}, error)
 
 	// Bind will bind the given value to the name in the receiver.
