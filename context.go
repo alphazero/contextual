@@ -5,7 +5,7 @@ import (
 )
 
 type context struct {
-	parent  *context
+	parent   *context
 	bindings map[string]interface{}
 }
 
@@ -26,11 +26,11 @@ func ChildContext(p *context) (c *context, e error) {
 	return
 }
 
-func ___TEMP___ (c *context) Context {
+func ___TEMP___(c *context) Context {
 	assert(c)
 	return c
 }
-func assert (c *context) {
+func assert(c *context) {
 	if c == nil {
 		panic("c is receiver")
 	}
@@ -39,6 +39,7 @@ func (c *context) IsRoot() bool {
 	assert(c)
 	return c.parent == nil
 }
+
 // Lookup will return a non-nil interface{} reference if a non-nil value binding
 // is present in the context or its parental hierarchical path.  The receiver is
 // first checked, and if not root, successive parents (including root) will be searched.
@@ -48,10 +49,10 @@ func (c *context) IsRoot() bool {
 //  NilNameError <= nil names are not allowed
 func (c *context) Lookup(name string) (value interface{}, e error) {
 	assert(c)
-    if name == "" {
-        return nil, Error{NilNameError}
-    }
-	if value = c.bindings[name]; value == nil  {
+	if name == "" {
+		return nil, Error{NilNameError}
+	}
+	if value = c.bindings[name]; value == nil {
 		if c.parent != nil {
 			return c.parent.Lookup(name)
 		}
@@ -68,7 +69,7 @@ func (c *context) Lookup(name string) (value interface{}, e error) {
 //
 //  NilNameError <= nil names are not allowed
 //  IllegalArgument <= n is negative
-func (c *context) LookupN(name string, n int) (interface{}, error){
+func (c *context) LookupN(name string, n int) (interface{}, error) {
 	assert(c)
 	return nil, nil
 }
