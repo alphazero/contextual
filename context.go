@@ -26,10 +26,6 @@ func ChildContext(p *context) (c *context, e error) {
 	return
 }
 
-func ___TEMP___(c *context) Context {
-	assert(c)
-	return c
-}
 func assert(c *context) {
 	if c == nil {
 		panic("c is receiver")
@@ -48,7 +44,6 @@ func (c *context) IsRoot() bool {
 //
 //  NilNameError <= nil names are not allowed
 func (c *context) Lookup(name string) (value interface{}, e error) {
-	assert(c)
 	if name == "" {
 		return nil, Error{NilNameError}
 	}
@@ -68,7 +63,7 @@ func (c *context) Lookup(name string) (value interface{}, e error) {
 // Errors:
 //
 //  NilNameError <= nil names are not allowed
-//  IllegalArgument <= n is negative
+//  NegativeNArgError <= n is negative
 func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 	if name == "" {
 		return nil, Error{NilNameError}
@@ -77,8 +72,9 @@ func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 		return nil, Error{IllegalArgumentError}
 	}
 	if value = c.bindings[name]; value == nil {
-		if c.parent != nil {
-			return c.parent.Lookup(name)
+		n--
+		if c.parent != nil && n >= 0 {
+			return c.parent.LookupN(name, n)
 		}
 	}
 	return
@@ -92,7 +88,6 @@ func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 //  NilValueError <= nil values are not allowed
 //  AlreadyBoundError <= a value is already bound to the name
 func (c *context) Bind(name string, value interface{}) error {
-	assert(c)
 	return nil
 }
 
@@ -103,7 +98,6 @@ func (c *context) Bind(name string, value interface{}) error {
 //  NilNameError <= nil names are not allowed
 //  NoSuchBinding <= no values are bound to the name
 func (c *context) Unbind(name string) error {
-	assert(c)
 	return nil
 }
 
@@ -116,6 +110,5 @@ func (c *context) Unbind(name string) error {
 //  NilNameError <= nil names are not allowed
 //  NilValueError <= nil values are not allowed
 func (c *context) Rebind(name string, value interface{}) error {
-	assert(c)
 	return nil
 }
