@@ -8,17 +8,17 @@ import (
 func TestContextStructStart_NOP(t *testing.T) {
 	fmt.Println("contextual.context")
 }
-func TestContextConstruct(t *testing.T) {
-	var ctx Context = RootContext()
+func TestNewContext(t *testing.T) {
+	var ctx Context = NewContext()
 	if ctx == nil {
-		t.Fatalf("RootContext returned nil ref")
+		t.Fatalf("NewContext returned nil ref")
 	}
 
 	fmt.Println("\tcreate root context")
 }
 
-func TestChildContextConstruct(t *testing.T) {
-	rootCtx := RootContext()
+func TestNewContextChild(t *testing.T) {
+	rootCtx := NewContext()
 
 	ctx, e := ChildContext(rootCtx)
 	if e != nil {
@@ -40,7 +40,7 @@ func TestChildContextConstruct(t *testing.T) {
 
 func TestIsRoot(t *testing.T) {
 	// a1 - don't bother with error/nil checks
-	rootCtx := RootContext()
+	rootCtx := NewContext()
 	if rootCtx.IsRoot() != true {
 		t.Fatalf("IsRoot() for a root context must return true")
 	}

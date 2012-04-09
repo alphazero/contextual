@@ -6,19 +6,17 @@ import (
 	"fmt"
 )
 
-// REVU:
-// don't like this - need a more general approach.
 const (
 	/* - general errors - */
 	IllegalArgumentError = "ERR - illegal argument"
 	NilParentError       = "ERR - parent is nil"
 	NilNameError         = "ERR - name is nil/zero-value"
 	NegativeNArrError    = "ERR - hierchy walk steps 'n' is negative"
-	NoSuchBindingError   = "ERR - no such binding"
 
 	/* - binding op errors - */
-	NilValueError     = "ERR - nil values are not allowed"
-	AlreadyBoundError = "ERR - already bound error"
+	NilValueError      = "ERR - nil values are not allowed"
+	AlreadyBoundError  = "ERR - already bound error"
+	NoSuchBindingError = "ERR - no such binding"
 )
 
 // General errors
@@ -29,19 +27,31 @@ type Error struct {
 func (e Error) Error() string {
 	return e.msg
 }
+func (e Error) Is(errmsg string) bool {
+	return e.msg == errmsg
+}
 
 // Binding op errors
 type BindingError struct {
+	err   *Error
 	name  string
 	value interface{}
-	msg   string
 }
 
-func (e *BindingError) Error() string {
-	return fmt.Sprintf("%s - (name:%s - value:%v)", e.msg, e.name, e.value)
+func newBindingError(msg string, n string, v interface{}) BindingError {
+	e := &Error{msg}
+	return BindingError{e, n, v}
+}
+func (e BindingError) Error() string {
+	return fmt.Sprintf("%s - (name:%s - value:%v)", e.err.msg, e.name, e.value)
+}
+func (e BindingError) Is(errmsg string) bool {
+	return e.err.msg == errmsg
 }
 
-// REVU-END
+// ----------------------------------------------------------------------------
+// Contextual API
+// ----------------------------------------------------------------------------
 
 // Contexts are hierarchical namespaces.
 type Context interface {
@@ -83,7 +93,7 @@ type Context interface {
 	// Errors:
 	//
 	//  NilNameError <= zero-value names are not allowed
-	//  NoSuchBinding <= no values are bound to the name
+	//  NoSuchBindingError <= no values are bound to the name
 	Unbind(name string) (unboundValue interface{}, e error)
 
 	// Rebind's semantics are precisely identical to an Unbind followed

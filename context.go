@@ -13,10 +13,12 @@ func newContext() *context {
 	return &context{nil, make(map[string]interface{})}
 }
 
-func RootContext() *context {
+// NewContext makes and initializes a new root context
+func NewContext() *context {
 	return newContext()
 }
 
+// REVU: hmm .. c.newChild() or this?  (concern is security)
 func ChildContext(p *context) (c *context, e error) {
 	if p == nil {
 		return nil, errors.New("p is nil")
@@ -96,7 +98,7 @@ func (c *context) Bind(name string, value interface{}) error {
 	}
 
 	if value = c.bindings[name]; value != nil {
-		return Error{AlreadyBoundError}
+		return newBindingError(AlreadyBoundError, name, value)
 	}
 
 	c.bindings[name] = value
@@ -110,14 +112,13 @@ func (c *context) Bind(name string, value interface{}) error {
 // Errors:
 //
 //  NilNameError <= zero-value names are not allowed
-//  NoSuchBinding <= no values are bound to the name
+//  NoSuchBindingError <= no values are bound to the name
 func (c *context) Unbind(name string) (value interface{}, e error) {
 	if name == "" {
 		return nil, Error{NilValueError}
 	}
-	value = c.bindings[name]
-	if value != nil {
-		return nil, Error{AlreadyBoundError}
+	if value = c.bindings[name]; value == nil {
+		return nil, newBindingError(NoSuchBindingError, name, value)
 	}
 
 	c.bindings[name] = nil
