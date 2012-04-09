@@ -19,7 +19,7 @@ func RootContext() *context {
 
 func ChildContext(p *context) (c *context, e error) {
 	if p == nil {
-		return nil, errors.New("")
+		return nil, errors.New("p is nil")
 	}
 	c = newContext()
 	c.parent = p
