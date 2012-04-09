@@ -9,7 +9,19 @@ import (
  * to a simple and convenient specification based testing.
  */
 
-// demonstrate both creation and inspection of errors
+// Demonstrates creation and inspection of Error.
+func ExampleError() {
+
+	cerr := Error{NilNameError}
+	if cerr.Is(NilNameError) {
+		fmt.Println(cerr)
+	}
+
+	// Output:
+	// ERR - name is nil/zero-value
+}
+
+// Demonstrates creation and inspection of BindingError.
 func ExampleBindingError() {
 
 	name := "woof"
@@ -17,22 +29,22 @@ func ExampleBindingError() {
 	var cerr BindingError
 
 	cerr = newBindingError(NilValueError, name, nil)
-	fmt.Println(cerr.Error())
-	fmt.Println(cerr.Is(NilValueError))
+	if cerr.Is(NilValueError) {
+		fmt.Println(cerr)
+	}
 
 	cerr = newBindingError(AlreadyBoundError, name, value)
-	fmt.Println(cerr.Error())
-	fmt.Println(cerr.Is(AlreadyBoundError))
+	if cerr.Is(AlreadyBoundError) {
+		fmt.Println(cerr)
+	}
 
 	cerr = newBindingError(NoSuchBindingError, name, nil)
-	fmt.Println(cerr.Error())
-	fmt.Println(cerr.Is(NoSuchBindingError))
+	if cerr.Is(NoSuchBindingError) {
+		fmt.Println(cerr)
+	}
 
 	// Output:
 	// ERR - nil values are not allowed - (name:woof - value:<nil>)
-	// true
 	// ERR - already bound error - (name:woof - value:snowy)
-	// true
 	// ERR - no such binding - (name:woof - value:<nil>)
-	// true
 }
