@@ -33,6 +33,27 @@ func (c *context) IsRoot() bool {
 	return c.parent == nil
 }
 
+// Returns true if context is empty.  Note that like Count(), this measure
+// is contextual/relative from the perspective of a child context. (A sibling
+// context may get distinct results.)
+func (c *context) IsEmpty() bool {
+	if len(c.bindings) > 0 {
+		return true
+	}
+	if c.parent != nil {
+		return c.parent.IsEmpty()
+	}
+	return false
+}
+
+func (c *context) Size() int {
+	var c0 int
+	if c.parent != nil {
+		c0 = c.parent.Size()
+	}
+	return len(c.bindings) + c0
+}
+
 // Per spec:
 // Lookup will return a non-nil interface{} reference if a non-nil value binding
 // is present in the context or its parental hierarchical path.  The receiver is

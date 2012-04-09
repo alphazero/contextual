@@ -54,9 +54,23 @@ func (e BindingError) Is(errmsg string) bool {
 // ----------------------------------------------------------------------------
 
 // Contexts are hierarchical namespaces.
+// TODO:
+//  - count of elements
+//  - IsEmpty()
+//
 type Context interface {
 	// Returns true if root context.
 	IsRoot() bool
+
+	// Returns true if context is empty.  Note that like Size(), this measure
+	// is contextual/relative from the perspective of a child context. (A sibling
+	// context may get distinct results.)
+	// This method is equivalent to context.Size()==0
+	IsEmpty() bool
+
+	// Returns the size of context, which is a count of the visible binding
+	// in the context.
+	Size() int
 
 	// Lookup will return a non-nil interface{} reference if a non-nil value binding
 	// is present in the context or its parental hierarchical path.  The receiver is
