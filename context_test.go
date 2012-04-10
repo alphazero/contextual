@@ -415,6 +415,8 @@ func TestContextHierarchy(t *testing.T) {
 			}
 		}
 	}
+	// shadow higher level binding
+	//	c1_1.
 }
 
 /* --- CONFIRMED a4 ----------------------------------------------------------*/

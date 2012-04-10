@@ -134,7 +134,9 @@ func (c *context) Bind(name string, value interface{}) error {
 
 // Per spec:
 // Unbind will delete a value binding to the provided name.
-// The unbound value is returned.
+// The unbound value is returned. Unbind is only applicable
+// to bindings in the receiving Context, i.e. any binding
+// that is accessible via LookupN(name, 0).
 //
 // Errors:
 //
