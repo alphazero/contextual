@@ -339,6 +339,7 @@ func TestSingleContext(t *testing.T) {
  * tests for correct behavior of the following Context methods:
  * - Context#Bind()
  * - Context#Lookup()
+ * - Context#LookupN()
  * - Context#Size()    // post init
  * - Context#IsEmpty() // post init
  * - Context#Unbind()
@@ -350,14 +351,70 @@ func TestSingleContext(t *testing.T) {
  */
 
 func TestContextHierarchy(t *testing.T) {
-	// setup
-	//	ctx := NewContext()
-	//	child1, _ := ChildContext(ctx)
-	//	child1_1, _ := ChildContext(child1)
-	//	child2, _ := ChildContext(ctx)
-	//
-	//	values := mixedTypeValueSet()
-	//	names := genericUniqueIndexNames(len(values))
+	//	setup
+	cr := NewContext()
+	c1, _ := ChildContext(cr)
+	c2, _ := ChildContext(cr)
+	c1_1, _ := ChildContext(c1)
+	c1_2, _ := ChildContext(c1)
+	c2_1, _ := ChildContext(c2)
+	c1_1_1, _ := ChildContext(c1_1)
+
+	children := []Context{c1, c2, c1_1, c1_2, c2_1, c1_1_1}
+	childrenL1 := []Context{c1, c2}
+	childrenL2 := []Context{c1_1, c1_2, c2_1}
+	childrenL3 := []Context{c1_1_1}
+	levels := [][]Context{childrenL1, childrenL2, childrenL3}
+
+	values := mixedTypeValueSet()
+	names := genericUniqueIndexNames(len(values))
+
+	// Bind, Lookup, LookupN
+
+	cr.Bind(names[0], values[0]) // setup - a single binding in root
+
+	// basic lookup, IsEmpty, and Size for children
+	// all should see binding in root
+	// size for all is 1, non-empty
+	for i, ctx := range children {
+		v, e := ctx.Lookup(names[0])
+		if e != nil {
+			t.Fatalf("Unexpected error: %s", e)
+		}
+		if v != values[0] {
+			t.Fatalf("for children[%d] - Lookup(%s) - expected:%v got:%v", i, names[0], v)
+		}
+		if ctx.IsEmpty() {
+			t.Fatalf("for children[%d] - IsEmpty(%s) - expected:false", i)
+		}
+		if s := ctx.Size(); s != 1 {
+			t.Fatalf("for children[%d] - IsEmpty(%s) - expected:%d, got:%d", i, 1, s)
+		}
+	}
+
+	// limited lookup with N step up
+	// N = 0 : none
+	// N = 1 : L1
+	// N = 2 : L1, L2
+	// N = 3 : L1, L2, L3
+	var n int
+	for l := 0; l < len(levels); l++ {
+		for i, ctx := range levels[l] {
+			// all should see
+			v, e := ctx.LookupN(names[0], l+1)
+			if e != nil {
+				t.Fatalf("Unexpected error: %s", e)
+			}
+			if v != values[0] {
+				t.Fatalf("l[%d] i[%d] n[%d]- Lookup(%s) - expected:%v got:%v", l, i, n, names[0], v)
+			}
+			// none should see
+			v, _ = ctx.LookupN(names[0], l)
+			if v != nil {
+				t.Fatalf("l[%d] i[%d] n[%d]- Lookup(%s) - expected:%v got:%v", l, i, n, nil, v)
+			}
+		}
+	}
 }
 
 /* --- CONFIRMED a4 ----------------------------------------------------------*/
