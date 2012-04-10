@@ -96,7 +96,7 @@ func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 		return nil, Error{NilNameError}
 	}
 	if n < 0 {
-		return nil, Error{IllegalArgumentError}
+		return nil, Error{NegativeNArgError}
 	}
 
 	if value = c.bindings[name]; value == nil {
@@ -118,10 +118,10 @@ func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 //  AlreadyBoundError <= a value is already bound to the name
 func (c *context) Bind(name string, value interface{}) error {
 	if name == "" {
-		return Error{NilValueError}
+		return Error{NilNameError}
 	}
 	if value == nil {
-		return Error{NilNameError}
+		return Error{NilValueError}
 	}
 
 	if v := c.bindings[name]; v != nil {

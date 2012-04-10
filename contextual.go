@@ -11,7 +11,7 @@ const (
 	IllegalArgumentError = "ERR - illegal argument"
 	NilParentError       = "ERR - parent is nil"
 	NilNameError         = "ERR - name is nil/zero-value"
-	NegativeNArrError    = "ERR - hierchy walk steps 'n' is negative"
+	NegativeNArgError    = "ERR - hierchy walk steps 'n' is negative"
 
 	/* - binding op errors - */
 	NilValueError      = "ERR - nil values are not allowed"

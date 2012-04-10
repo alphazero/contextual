@@ -174,7 +174,7 @@ func TestContextSpecdError(t *testing.T) {
 
 	// test specified errors for Lookup
 	//  NilNameError <= zero-value names are not allowed
-	if _, e := ctx.Lookup(""); e == nil {
+	if _, e := ctx.Lookup(""); e == nil || !e.(Error).Is(NilNameError) {
 		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
 	}
 	v, e := ctx.Lookup("no-such-binding")
@@ -189,15 +189,11 @@ func TestContextSpecdError(t *testing.T) {
 
 	//  NilNameError <= nil names are not allowed
 	//  NegativeNArgError <= n is negative
-	if _, e := ctx.LookupN("", 0); e == nil {
-		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
+	if _, e := ctx.LookupN("", 0); e == nil || !e.(Error).Is(NilNameError) {
+		t.Fatalf("LookupN(\"\", 0) expected error: %s", NilNameError)
 	}
-	v, e = ctx.LookupN("no-such-binding", 0)
-	if e != nil {
-		t.Fatalf("Unexpected error: %s", e)
-	}
-	if v != nil {
-		t.Fatalf("Lookup(\"\") - expected:%v got:%v", nil, v)
+	if v, e = ctx.LookupN("no-such-binding", -1); e == nil || !e.(Error).Is(NegativeNArgError) {
+		t.Fatalf("LookupN(\"\", 0) expected error: %s", NegativeNArgError)
 	}
 
 	// Bind()
@@ -206,10 +202,10 @@ func TestContextSpecdError(t *testing.T) {
 	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
 	//  AlreadyBoundError <= a value is already bound to the name
-	if e := ctx.Bind("", "some value"); e == nil {
+	if e := ctx.Bind("", "some value"); e == nil || !e.(Error).Is(NilNameError) {
 		t.Fatalf("Bind(\"\") expected error: %s", NilNameError)
 	}
-	if e := ctx.Bind("some key", nil); e == nil {
+	if e := ctx.Bind("some key", nil); e == nil || !e.(Error).Is(NilValueError) {
 		t.Fatalf("Bind(\"\") expected error: %s", NilValueError)
 	}
 
@@ -227,6 +223,7 @@ func TestContextSpecdError(t *testing.T) {
 	}
 	wat, e = ctx.Unbind("some key")
 	if e == nil {
+//	if e == nil || !e.(Error).Is(NoSuchBindingError) {
 		t.Fatalf("Unbind(\"\") expected error: %s", NoSuchBindingError)
 	}
 	if wat != nil {
@@ -416,7 +413,7 @@ func TestContextHierarchy(t *testing.T) {
 		}
 	}
 	// shadow higher level binding
-	//	c1_1.
+	//	c1_1.Bind(names[0])
 }
 
 /* --- CONFIRMED a4 ----------------------------------------------------------*/
