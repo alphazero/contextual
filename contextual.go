@@ -19,33 +19,36 @@ const (
 	NoSuchBindingError = "ERR - no such binding"
 )
 
-// General errors
-type Error struct {
+type Error interface {
+	Is(errmsg string) bool
+}
+
+type error struct {
 	msg string
 }
 
-func (e Error) Error() string {
+func (e error) Error() string {
 	return e.msg
 }
-func (e Error) Is(errmsg string) bool {
+func (e error) Is(errmsg string) bool {
 	return e.msg == errmsg
 }
 
 // Binding op errors
-type BindingError struct {
-	err   *Error
+type bindingError struct {
+	err   *error
 	name  string
 	value interface{}
 }
 
-func newBindingError(msg string, n string, v interface{}) BindingError {
-	e := &Error{msg}
-	return BindingError{e, n, v}
+func newBindingError(msg string, n string, v interface{}) Error {
+	e := &error{msg}
+	return bindingError{e, n, v}
 }
-func (e BindingError) Error() string {
+func (e bindingError) Error() string {
 	return fmt.Sprintf("%s - (name:%s - value:%v)", e.err.msg, e.name, e.value)
 }
-func (e BindingError) Is(errmsg string) bool {
+func (e bindingError) Is(errmsg string) bool {
 	return e.err.msg == errmsg
 }
 
@@ -79,7 +82,7 @@ type Context interface {
 	// Errors:
 	//
 	//  NilNameError <= zero-value names are not allowed
-	Lookup(name string) (value interface{}, e error)
+	Lookup(name string) (value interface{}, e Error)
 
 	// LookupN is a constrained variant of Lookup.  (See Lookup() for general details)
 	//
@@ -90,7 +93,7 @@ type Context interface {
 	//
 	//  NilNameError <= zero-value names are not allowed
 	//  NegativeNArgError <= n is negative
-	LookupN(name string, n int) (interface{}, error)
+	LookupN(name string, n int) (interface{}, Error)
 
 	// Bind will bind the given value to the name in the receiver.
 	//
@@ -99,7 +102,7 @@ type Context interface {
 	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
 	//  AlreadyBoundError <= a value is already bound to the name
-	Bind(name string, value interface{}) error
+	Bind(name string, value interface{}) Error
 
 	// Unbind will delete a value binding to the provided name.
 	// The unbound value is returned. Unbind is only applicable
@@ -110,7 +113,7 @@ type Context interface {
 	//
 	//  NilNameError <= zero-value names are not allowed
 	//  NoSuchBindingError <= no values are bound to the name
-	Unbind(name string) (unboundValue interface{}, e error)
+	Unbind(name string) (unboundValue interface{}, e Error)
 
 	// Rebind's semantics are precisely identical to an Unbind followed
 	// by a Bound.
@@ -121,5 +124,5 @@ type Context interface {
 	//  NoSuchBinding <= no values were bound to the name
 	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
-	Rebind(name string, value interface{}) (unboundValue interface{}, e error)
+	Rebind(name string, value interface{}) (unboundValue interface{}, e Error)
 }

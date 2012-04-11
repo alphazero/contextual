@@ -223,7 +223,7 @@ func TestContextSpecdError(t *testing.T) {
 	}
 	wat, e = ctx.Unbind("some key")
 	if e == nil {
-//	if e == nil || !e.(Error).Is(NoSuchBindingError) {
+		//	if e == nil || !e.(Error).Is(NoSuchBindingError) {
 		t.Fatalf("Unbind(\"\") expected error: %s", NoSuchBindingError)
 	}
 	if wat != nil {

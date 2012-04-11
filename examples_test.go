@@ -12,7 +12,7 @@ import (
 // Demonstrates creation and inspection of Error.
 func ExampleError() {
 
-	cerr := Error{NilNameError}
+	cerr := error{NilNameError}
 	if cerr.Is(NilNameError) {
 		fmt.Println(cerr)
 	}
@@ -26,9 +26,8 @@ func ExampleBindingError() {
 
 	name := "woof"
 	value := "snowy"
-	var cerr BindingError
 
-	cerr = newBindingError(NilValueError, name, nil)
+	cerr := newBindingError(NilValueError, name, nil)
 	if cerr.Is(NilValueError) {
 		fmt.Println(cerr)
 	}

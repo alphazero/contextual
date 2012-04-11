@@ -1,7 +1,7 @@
 package contextual
 
 import (
-	"errors"
+	//	"errors"
 	"log" // TEMP
 )
 
@@ -20,9 +20,9 @@ func NewContext() *context {
 }
 
 // REVU: hmm .. c.newChild() or this?  (concern is security)
-func ChildContext(p *context) (c *context, e error) {
+func ChildContext(p *context) (c *context, e Error) {
 	if p == nil {
-		return nil, errors.New("p is nil")
+		return nil, error{NilParentError}
 	}
 
 	c = newContext()
@@ -63,10 +63,10 @@ func (c *context) Size() int {
 // Errors:
 //
 //  NilNameError <= nil names are not allowed
-func (c *context) Lookup(name string) (value interface{}, e error) {
+func (c *context) Lookup(name string) (value interface{}, e Error) {
 	log.Printf("Lookup(%s)\n", name)
 	if name == "" {
-		return nil, Error{NilNameError}
+		return nil, error{NilNameError}
 	}
 
 	if value = c.bindings[name]; value == nil {
@@ -91,12 +91,12 @@ func (c *context) Lookup(name string) (value interface{}, e error) {
 //
 //  NilNameError <= nil names are not allowed
 //  NegativeNArgError <= n is negative
-func (c *context) LookupN(name string, n int) (value interface{}, e error) {
+func (c *context) LookupN(name string, n int) (value interface{}, e Error) {
 	if name == "" {
-		return nil, Error{NilNameError}
+		return nil, error{NilNameError}
 	}
 	if n < 0 {
-		return nil, Error{NegativeNArgError}
+		return nil, error{NegativeNArgError}
 	}
 
 	if value = c.bindings[name]; value == nil {
@@ -116,12 +116,12 @@ func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 //  NilNameError <= nil names are not allowed
 //  NilValueError <= nil values are not allowed
 //  AlreadyBoundError <= a value is already bound to the name
-func (c *context) Bind(name string, value interface{}) error {
+func (c *context) Bind(name string, value interface{}) Error {
 	if name == "" {
-		return Error{NilNameError}
+		return error{NilNameError}
 	}
 	if value == nil {
-		return Error{NilValueError}
+		return error{NilValueError}
 	}
 
 	if v := c.bindings[name]; v != nil {
@@ -142,9 +142,9 @@ func (c *context) Bind(name string, value interface{}) error {
 //
 //  NilNameError <= zero-value names are not allowed
 //  NoSuchBindingError <= no values are bound to the name
-func (c *context) Unbind(name string) (value interface{}, e error) {
+func (c *context) Unbind(name string) (value interface{}, e Error) {
 	if name == "" {
-		return nil, Error{NilValueError}
+		return nil, error{NilValueError}
 	}
 	if value = c.bindings[name]; value == nil {
 		return nil, newBindingError(NoSuchBindingError, name, value)
@@ -164,7 +164,7 @@ func (c *context) Unbind(name string) (value interface{}, e error) {
 //  NoSuchBinding <= no values were bound to the name
 //  NilNameError <= zero-value names are not allowed
 //  NilValueError <= nil values are not allowed
-func (c *context) Rebind(name string, value interface{}) (unboundValue interface{}, e error) {
+func (c *context) Rebind(name string, value interface{}) (unboundValue interface{}, e Error) {
 
 	if unboundValue, e = c.Unbind(name); e != nil {
 		return
