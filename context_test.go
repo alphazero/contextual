@@ -1,8 +1,6 @@
-/* Note on file organization:  tests are invoked in sequence by Go test
- * harness and that fact is used here to affirm a set of assumptions as
- * we test the constructs.  As assumptions are affirmed, they are noted
- * in comments below.  So, do not change the order of the tests.
- */
+// Copyright 2011 Joubin Houshyar.  All rights reserved.
+// Use of this source code is governed by a 2-clause BSD
+// license that can be found in the LICENSE file.
 
 package contextual
 
@@ -10,6 +8,12 @@ import (
 	"fmt"
 	"testing"
 )
+
+/* Note on file organization:  tests are invoked in sequence by Go test
+ * harness and that fact is used here to affirm a set of assumptions as
+ * we test the constructs.  As assumptions are affirmed, they are noted
+ * in comments below.  So, do not change the order of the tests.
+ */
 
 // ============================================================================
 // testing: contextual.context

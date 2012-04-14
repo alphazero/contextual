@@ -1,3 +1,7 @@
+// Copyright 2011 Joubin Houshyar.  All rights reserved.
+// Use of this source code is governed by a 2-clause BSD
+// license that can be found in the LICENSE file.
+
 // Package contextual defines the semantics of a generalized
 // hierarchical namespace of string names, and untyped values.
 package contextual
@@ -125,4 +129,23 @@ type Context interface {
 	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
 	Rebind(name string, value interface{}) (unboundValue interface{}, e Error)
+}
+
+// Contextual things
+type Contextual interface {
+	SetContext(ctx Context)
+}
+
+// A component is contextual
+// TOOD: ports {in, out}
+type Component interface {
+	Contextual
+}
+
+// A component that is a containment context
+type Container interface {
+	Component
+
+	Add(c Component) Error
+	Remove(c Component) Error
 }
