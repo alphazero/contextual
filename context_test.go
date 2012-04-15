@@ -334,6 +334,9 @@ func TestSingleContext(t *testing.T) {
 
 /* --- CONFIRMED a3 ----------------------------------------------------------*/
 
+// REVU: CHECK a4 is INCOMPLETE!
+// TODO: ^^^
+
 /* --- CHECK a4 ---------------------------------------------------------------
  * - a4: correct basic ops for context hierarchy
  *
@@ -343,6 +346,7 @@ func TestSingleContext(t *testing.T) {
  * - Context#LookupN()
  * - Context#Size()    // post init
  * - Context#IsEmpty() // post init
+ * - Context#Depth()
  * - Context#Unbind()
  * - Context#Rebind()
  * assumptions:
@@ -367,12 +371,27 @@ func TestContextHierarchy(t *testing.T) {
 	childrenL3 := []Context{c1_1_1}
 	levels := [][]Context{childrenL1, childrenL2, childrenL3}
 
+	// Depth
+	expdepth := 0
+	if d := cr.Depth(); d != expdepth {
+		t.Fatalf("for context root - Depth() - expected:%v got:%v", expdepth, d)
+	}
+	for l := 0; l < len(levels); l++ {
+		expdepth = l + 1
+		for i, ctx := range levels[l] {
+			if d := ctx.Depth(); d != expdepth {
+				t.Fatalf("l[%d] i[%d] - Depth() - expected:%v got:%v", l, i, expdepth, d)
+			}
+		}
+	}
+
+	// for test data
 	values := mixedTypeValueSet()
 	names := genericUniqueIndexNames(len(values))
 
 	// Bind, Lookup, LookupN
 
-	cr.Bind(names[0], values[0]) // setup - a single binding in root
+	cr.Bind(names[0], values[0]) // setup - a single binding in root e.g size is 1
 
 	// basic lookup, IsEmpty, and Size for children
 	// all should see binding in root
@@ -389,7 +408,7 @@ func TestContextHierarchy(t *testing.T) {
 			t.Fatalf("for children[%d] - IsEmpty(%s) - expected:false", i)
 		}
 		if s := ctx.Size(); s != 1 {
-			t.Fatalf("for children[%d] - IsEmpty(%s) - expected:%d, got:%d", i, 1, s)
+			t.Fatalf("for children[%d] - Size(%s) - expected:%d, got:%d", i, 1, s)
 		}
 	}
 
@@ -398,7 +417,7 @@ func TestContextHierarchy(t *testing.T) {
 	// N = 1 : L1
 	// N = 2 : L1, L2
 	// N = 3 : L1, L2, L3
-	var n int
+	var n int // REVU: what is this?
 	for l := 0; l < len(levels); l++ {
 		for i, ctx := range levels[l] {
 			// all should see

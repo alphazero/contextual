@@ -59,6 +59,15 @@ func (c *context) Size() int {
 	return len(c.bindings) + c0
 }
 
+// Returns a non-negative value of the nesting order (depth) of the context.
+// If IsRoot() is true, depth is 0.
+func (c *context) Depth() int {
+	if c.parent == nil {
+		return 0
+	}
+	return c.parent.Depth() + 1
+}
+
 // Per spec:
 // Lookup will return a non-nil interface{} reference if a non-nil value binding
 // is present in the context or its parental hierarchical path.  The receiver is
