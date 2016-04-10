@@ -1,60 +1,29 @@
-// Copyright 2011 Joubin Houshyar.  All rights reserved.
+// Copyright 2011-2016 Joubin Houshyar.  All rights reserved.
 // Use of this source code is governed by a 2-clause BSD
 // license that can be found in the LICENSE file.
 
 // Package contextual defines the semantics of a generalized
-// hierarchical namespace of string names, and untyped values.
+// hierarchical namespace of string names, and untyped values
+// that serve as the operational context for components.
 package contextual
 
 import (
-	"fmt"
+	"goerror"
 )
 
-const (
+var (
 	/* - general errors - */
-	IllegalArgumentError = "ERR - illegal argument"
-	NilParentError       = "ERR - parent is nil"
-	NilNameError         = "ERR - name is nil/zero-value"
-	NegativeNArgError    = "ERR - hierchy walk steps 'n' is negative"
+	IllegalArgumentError = goerror.Define("illegal argument")
+	IllegalStateError    = goerror.Define("illegal state")
+	NilParentError       = goerror.Define("parent is nil")
+	NilNameError         = goerror.Define("name is nil/zero-value")
+	NegativeNArgError    = goerror.Define("hierchy walk steps 'n' is negative")
 
 	/* - binding op errors - */
-	NilValueError      = "ERR - nil values are not allowed"
-	AlreadyBoundError  = "ERR - already bound error"
-	NoSuchBindingError = "ERR - no such binding"
+	NilValueError      = goerror.Define("nil values are not allowed")
+	AlreadyBoundError  = goerror.Define("already bound error")
+	NoSuchBindingError = goerror.Define("no such binding")
 )
-
-type Error interface {
-	Is(errmsg string) bool
-}
-
-type error struct {
-	msg string
-}
-
-func (e error) Error() string {
-	return e.msg
-}
-func (e error) Is(errmsg string) bool {
-	return e.msg == errmsg
-}
-
-// Binding op errors
-type bindingError struct {
-	err   *error
-	name  string
-	value interface{}
-}
-
-func newBindingError(msg string, n string, v interface{}) Error {
-	e := &error{msg}
-	return bindingError{e, n, v}
-}
-func (e bindingError) Error() string {
-	return fmt.Sprintf("%s - (name:%s - value:%v)", e.err.msg, e.name, e.value)
-}
-func (e bindingError) Is(errmsg string) bool {
-	return e.err.msg == errmsg
-}
 
 // ----------------------------------------------------------------------------
 // Contextual API
@@ -86,7 +55,7 @@ type Context interface {
 	// Errors:
 	//
 	//  NilNameError <= zero-value names are not allowed
-	Lookup(name string) (value interface{}, e Error)
+	Lookup(name string) (value interface{}, e error)
 
 	// LookupN is a constrained variant of Lookup.  (See Lookup() for general details)
 	//
@@ -97,7 +66,7 @@ type Context interface {
 	//
 	//  NilNameError <= zero-value names are not allowed
 	//  NegativeNArgError <= n is negative
-	LookupN(name string, n int) (interface{}, Error)
+	LookupN(name string, n int) (interface{}, error)
 
 	// Bind will bind the given value to the name in the receiver.
 	//
@@ -106,7 +75,7 @@ type Context interface {
 	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
 	//  AlreadyBoundError <= a value is already bound to the name
-	Bind(name string, value interface{}) Error
+	Bind(name string, value interface{}) error
 
 	// Unbind will delete a value binding to the provided name.
 	// The unbound value is returned. Unbind is only applicable
@@ -117,7 +86,7 @@ type Context interface {
 	//
 	//  NilNameError <= zero-value names are not allowed
 	//  NoSuchBindingError <= no values are bound to the name
-	Unbind(name string) (unboundValue interface{}, e Error)
+	Unbind(name string) (unboundValue interface{}, e error)
 
 	// Rebind's semantics are precisely identical to an Unbind followed
 	// by a Bound.
@@ -128,10 +97,10 @@ type Context interface {
 	//  NoSuchBinding <= no values were bound to the name
 	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
-	Rebind(name string, value interface{}) (unboundValue interface{}, e Error)
+	Rebind(name string, value interface{}) (unboundValue interface{}, e error)
 }
 
-// Contextual things
+// General baseline interface of a 'contextual' object
 type Contextual interface {
 	SetContext(ctx Context)
 }
@@ -146,6 +115,6 @@ type Component interface {
 type Container interface {
 	Component
 
-	Add(c Component) Error
-	Remove(c Component) Error
+	Add(c Component) error
+	Remove(c Component) error
 }

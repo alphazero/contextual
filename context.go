@@ -1,12 +1,11 @@
-// Copyright 2011 Joubin Houshyar.  All rights reserved.
+// Copyright 2011-2016 Joubin Houshyar.  All rights reserved.
 // Use of this source code is governed by a 2-clause BSD
 // license that can be found in the LICENSE file.
 
 package contextual
 
 import (
-	//	"errors"
-	"log" // TEMP
+	"fmt"
 )
 
 type context struct {
@@ -24,9 +23,9 @@ func NewContext() *context {
 }
 
 // REVU: hmm .. c.newChild() or this?  (concern is security)
-func ChildContext(p *context) (c *context, e Error) {
+func ChildContext(p *context) (c *context, e error) {
 	if p == nil {
-		return nil, error{NilParentError}
+		return nil, NilParentError()
 	}
 
 	c = newContext()
@@ -73,19 +72,19 @@ func (c *context) Depth() int {
 // is present in the context or its parental hierarchical path.  The receiver is
 // first checked, and if not root, successive parents (including root) will be searched.
 //
-// Errors:
+// errors:
 //
-//  NilNameError <= nil names are not allowed
-func (c *context) Lookup(name string) (value interface{}, e Error) {
-	log.Printf("Lookup(%s)\n", name)
+//  IllegalArgumentError if name is nil
+func (c *context) Lookup(name string) (value interface{}, e error) {
+	fmt.Printf("debug - Lookup(%s)\n", name)
 	if name == "" {
-		return nil, error{NilNameError}
+		return nil, IllegalArgumentError("name is nil")
 	}
 
 	if value = c.bindings[name]; value == nil {
-		log.Printf("Lookup(%s) = %v\n", name, value)
+		fmt.Printf("debug - Lookup(%s) = %v\n", name, value)
 		for n, v := range c.bindings {
-			log.Printf("\tdebug [%s] => %v\n", n, v)
+			fmt.Printf("\tdebug [%s] => %v\n", n, v)
 		}
 		if c.parent != nil {
 			return c.parent.Lookup(name)
@@ -100,16 +99,16 @@ func (c *context) Lookup(name string) (value interface{}, e Error) {
 // This method will limit its walk up the hierarchy (if possible) to number of
 // steps (param: n).
 //
-// Errors:
+// errors:
 //
-//  NilNameError <= nil names are not allowed
-//  NegativeNArgError <= n is negative
-func (c *context) LookupN(name string, n int) (value interface{}, e Error) {
+//  IllegalArgumentError if name is nil
+//  IllegalArgumentError if n < 0
+func (c *context) LookupN(name string, n int) (value interface{}, e error) {
 	if name == "" {
-		return nil, error{NilNameError}
+		return nil, IllegalArgumentError("name is nil")
 	}
 	if n < 0 {
-		return nil, error{NegativeNArgError}
+		return nil, IllegalArgumentError("n < 0")
 	}
 
 	if value = c.bindings[name]; value == nil {
@@ -124,21 +123,21 @@ func (c *context) LookupN(name string, n int) (value interface{}, e Error) {
 // Per spec:
 // Bind will bind the given value to the name in the receiver.
 //
-// Errors:
+// errors:
 //
-//  NilNameError <= nil names are not allowed
-//  NilValueError <= nil values are not allowed
-//  AlreadyBoundError <= a value is already bound to the name
-func (c *context) Bind(name string, value interface{}) Error {
+//  IllegalArgumentError if name is nil
+//  IllegalArgumentError if value is nil
+//  AlreadyBounderror <= a value is already bound to the name
+func (c *context) Bind(name string, value interface{}) error {
 	if name == "" {
-		return error{NilNameError}
+		return IllegalArgumentError("name is nil")
 	}
 	if value == nil {
-		return error{NilValueError}
+		return IllegalArgumentError("value is nil")
 	}
 
 	if v := c.bindings[name]; v != nil {
-		return newBindingError(AlreadyBoundError, name, v)
+		return AlreadyBoundError(fmt.Sprintf("%s => %v", name, v))
 	}
 
 	c.bindings[name] = value
@@ -151,16 +150,17 @@ func (c *context) Bind(name string, value interface{}) Error {
 // to bindings in the receiving Context, i.e. any binding
 // that is accessible via LookupN(name, 0).
 //
-// Errors:
+// errors:
 //
-//  NilNameError <= zero-value names are not allowed
-//  NoSuchBindingError <= no values are bound to the name
-func (c *context) Unbind(name string) (value interface{}, e Error) {
+//  IllegalArgumentError if name is nil
+//  NilNameerror <= zero-value names are not allowed
+//  NoSuchBindingerror <= no values are bound to the name
+func (c *context) Unbind(name string) (value interface{}, e error) {
 	if name == "" {
-		return nil, error{NilValueError}
+		return nil, IllegalArgumentError("name is nil")
 	}
 	if value = c.bindings[name]; value == nil {
-		return nil, newBindingError(NoSuchBindingError, name, value)
+		return nil, NoSuchBindingError(name)
 	}
 
 	delete(c.bindings, name)
@@ -172,12 +172,12 @@ func (c *context) Unbind(name string) (value interface{}, e Error) {
 // by a Bound.
 // The unbound value is returned.
 //
-// Errors:
+// errors:
 //
 //  NoSuchBinding <= no values were bound to the name
-//  NilNameError <= zero-value names are not allowed
-//  NilValueError <= nil values are not allowed
-func (c *context) Rebind(name string, value interface{}) (unboundValue interface{}, e Error) {
+//  NilNameerror <= zero-value names are not allowed
+//  NilValueerror <= nil values are not allowed
+func (c *context) Rebind(name string, value interface{}) (unboundValue interface{}, e error) {
 
 	if unboundValue, e = c.Unbind(name); e != nil {
 		return

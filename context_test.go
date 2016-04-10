@@ -1,4 +1,4 @@
-// Copyright 2011 Joubin Houshyar.  All rights reserved.
+// Copyright 2011-2016 Joubin Houshyar.  All rights reserved.
 // Use of this source code is governed by a 2-clause BSD
 // license that can be found in the LICENSE file.
 
@@ -6,6 +6,7 @@ package contextual
 
 import (
 	"fmt"
+	"goerror"
 	"testing"
 )
 
@@ -35,7 +36,7 @@ func mixedTypeValueSet() []interface{} {
 	ch := make(chan emptyStruct)
 	fn := func() {} // func() is "uncomparable type" oh, well.
 	pfn := &fn
-	txt := "hello there"
+	txt := "Salaam!"
 
 	return []interface{}{
 		num, str, ptr, ch /*fn,*/, pfn, txt,
@@ -177,9 +178,9 @@ func TestContextSpecdError(t *testing.T) {
 	// Lookup()
 
 	// test specified errors for Lookup
-	//  NilNameError <= zero-value names are not allowed
-	if _, e := ctx.Lookup(""); e == nil || !e.(Error).Is(NilNameError) {
-		t.Fatalf("Lookup(nil) expected error: %s", NilNameError)
+	// IllegalArgumentError - ""/nil name
+	if _, e := ctx.Lookup(""); e == nil || !goerror.TypeOf(e).Is(IllegalArgumentError) {
+		t.Fatalf("Lookup(nil) expected error: %s", IllegalArgumentError)
 	}
 	v, e := ctx.Lookup("no-such-binding")
 	if e != nil {
@@ -191,13 +192,14 @@ func TestContextSpecdError(t *testing.T) {
 
 	// LookupN()
 
-	//  NilNameError <= nil names are not allowed
-	//  NegativeNArgError <= n is negative
-	if _, e := ctx.LookupN("", 0); e == nil || !e.(Error).Is(NilNameError) {
-		t.Fatalf("LookupN(\"\", 0) expected error: %s", NilNameError)
+	// NilNameError <= nil names are not allowed
+	// IllegalArgumentError - ""/nil name
+	// IllegalArgumentError - n < 0
+	if _, e := ctx.LookupN("", 0); e == nil || !goerror.TypeOf(e).Is(IllegalArgumentError) {
+		t.Fatalf("LookupN(\"\", 0) expected error: %s", IllegalArgumentError)
 	}
-	if v, e = ctx.LookupN("no-such-binding", -1); e == nil || !e.(Error).Is(NegativeNArgError) {
-		t.Fatalf("LookupN(\"\", 0) expected error: %s", NegativeNArgError)
+	if v, e = ctx.LookupN("no-such-binding", -1); e == nil || !goerror.TypeOf(e).Is(IllegalArgumentError) {
+		t.Fatalf("LookupN(\"\", 0) expected error: %s", IllegalArgumentError)
 	}
 
 	// Bind()
@@ -206,11 +208,11 @@ func TestContextSpecdError(t *testing.T) {
 	//  NilNameError <= zero-value names are not allowed
 	//  NilValueError <= nil values are not allowed
 	//  AlreadyBoundError <= a value is already bound to the name
-	if e := ctx.Bind("", "some value"); e == nil || !e.(Error).Is(NilNameError) {
-		t.Fatalf("Bind(\"\") expected error: %s", NilNameError)
+	if e := ctx.Bind("", "some value"); e == nil || !goerror.TypeOf(e).Is(IllegalArgumentError) {
+		t.Fatalf("Bind(\"\") expected error: %s", IllegalArgumentError)
 	}
-	if e := ctx.Bind("some key", nil); e == nil || !e.(Error).Is(NilValueError) {
-		t.Fatalf("Bind(\"\") expected error: %s", NilValueError)
+	if e := ctx.Bind("some key", nil); e == nil || !goerror.TypeOf(e).Is(IllegalArgumentError) {
+		t.Fatalf("Bind(\"\") expected error: %s", IllegalArgumentError)
 	}
 
 	// Unbind()
@@ -227,7 +229,6 @@ func TestContextSpecdError(t *testing.T) {
 	}
 	wat, e = ctx.Unbind("some key")
 	if e == nil {
-		//	if e == nil || !e.(Error).Is(NoSuchBindingError) {
 		t.Fatalf("Unbind(\"\") expected error: %s", NoSuchBindingError)
 	}
 	if wat != nil {
